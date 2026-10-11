@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# agent skills
+.agents/
+.claude/
+skills-lock.json
+
+# use bun.lock only
+package-lock.json
