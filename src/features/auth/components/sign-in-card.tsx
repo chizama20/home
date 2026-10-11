@@ -72,7 +72,7 @@ export const SignInCard = ({ setState }: SignInCardProps) => {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="Email"
                         type="email"
-                        className="h-10"
+                        className="h-11"
                         required
                     />
                     <Input
@@ -81,10 +81,10 @@ export const SignInCard = ({ setState }: SignInCardProps) => {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Password"
                         type="password"
-                        className="h-10"
+                        className="h-11"
                         required
                     />
-                    <Button type="submit" size="lg" className="w-full h-10" disabled={pending}>
+                    <Button type="submit" size="lg" className="w-full h-11" disabled={pending}>
                         Continue
                     </Button>
                 </form>
@@ -93,7 +93,7 @@ export const SignInCard = ({ setState }: SignInCardProps) => {
                     <Button
                         variant="outline"
                         size="lg"
-                        className="w-full h-10 relative"
+                        className="w-full h-11 relative"
                         disabled={pending}
                         onClick={() => onProviderSignIn("google")}
                     >
@@ -103,12 +103,14 @@ export const SignInCard = ({ setState }: SignInCardProps) => {
                 </div>
                 <p className="text-xs text-muted-foreground">
                     Don&apos;t have an account?{" "}
-                    <span
+                    <button
+                        type="button"
                         onClick={() => setState("signUp")}
-                        className="text-primary hover:underline cursor-pointer"
+                        disabled={pending}
+                        className="rounded-sm font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
                     >
                         Sign up
-                    </span>
+                    </button>
                 </p>
             </CardContent>
         </Card>

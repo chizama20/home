@@ -10,6 +10,11 @@
 
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
+import type * as lib_access from "../lib/access.js";
+import type * as lib_errors from "../lib/errors.js";
+import type * as lib_slug from "../lib/slug.js";
+import type * as lib_validators from "../lib/validators.js";
+import type * as orgs from "../orgs.js";
 import type * as passwordRequirements from "../passwordRequirements.js";
 import type * as users from "../users.js";
 
@@ -22,6 +27,11 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
+  "lib/access": typeof lib_access;
+  "lib/errors": typeof lib_errors;
+  "lib/slug": typeof lib_slug;
+  "lib/validators": typeof lib_validators;
+  orgs: typeof orgs;
   passwordRequirements: typeof passwordRequirements;
   users: typeof users;
 }>;

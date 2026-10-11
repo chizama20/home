@@ -9,11 +9,11 @@
 
 | | |
 |---|---|
-| **Current step** | **Step 1 — Org admin creates an org** |
-| **Next action** | backend-demon builds the Step 1 backend (schema, `lib/errors.ts`, `lib/access.ts`, `orgs.ts`) |
-| **Then** | senior-architect reviews backend → frontend-god builds the pages → Baba tests → commit |
+| **Current step** | **Step 2 — Sidebar shell** |
+| **Next action** | senior-architect does the after-the-fact Step 1 final review; then Step 2 starts (mostly frontend-god) |
+| **Then** | frontend-god builds the shell → Baba tests → review → commit |
 | **Branch** | `develop` |
-| **Last commit** | `389b17b` Step 0 housekeeping |
+| **Last commit** | Step 1 — org creation (see `git log`) |
 | **Blocked on** | nothing |
 | **Last updated** | Oct 11, 2026 |
 
@@ -27,8 +27,8 @@
 | Step | What | Status |
 |---|---|---|
 | 0 | Housekeeping (Google auth, proxy rename, tokens) | ✅ Done — `389b17b` |
-| 1 | Org admin creates an org | 🔨 **Current** |
-| 2 | Sidebar shell | ⬜ |
+| 1 | Org admin creates an org | ✅ Done |
+| 2 | Sidebar shell | 🔨 **Current** |
 | 3 | Homes + audit + full access layer | ⬜ |
 | 4 | Team and invites | ⬜ |
 | 5 | Org approval | ⬜ |
@@ -98,7 +98,7 @@ Agents live in `.claude/agents/` (local only, never committed).
 
 ---
 
-### Step 1 — Org admin creates an org 🔨
+### Step 1 — Org admin creates an org ✅
 
 **Goal:** a signed-in user with no org creates one, becomes its admin, and lands on the org's page.
 
@@ -123,7 +123,7 @@ members: defineTable({
   role: v.union(v.literal("admin"), v.literal("staff")),
   status: v.union(v.literal("active"), v.literal("deactivated")),
 })
-  .index("by_userId", ["userId"])
+  .index("by_userId_and_status", ["userId", "status"])
   .index("by_orgId", ["orgId"])
   .index("by_orgId_and_userId", ["orgId", "userId"]),
 ```
@@ -151,7 +151,11 @@ members: defineTable({
 | `orgs.myMemberships` | query | My active orgs: `orgId`, `name`, `slug`, `role`. Bounded with `.take(n)`. |
 | `orgs.resolveSlug` | query | `{ orgId, name, role }` if I'm an active member, else `null` — same `null` for "doesn't exist" and "not a member" so slugs can't be probed. |
 
-**Slug rules:** 3–40 chars, `a-z`, `0-9`, `-`, unique. Reserved: `auth`, `onboarding`, `admin`, `api`, `settings`, `invite`, `new`, `pending`. Taken → `CONFLICT`; invalid/reserved → `VALIDATION`.
+**Slug rules** (shared in `convex/lib/slug.ts`, used by server and form): 3–40 chars, `^[a-z0-9]+(?:-[a-z0-9]+)*$` (no leading, trailing or double hyphens), unique. Reserved: `auth`, `onboarding`, `admin`, `api`, `settings`, `invite`, `new`, `pending`. Taken → `CONFLICT`; invalid/reserved → `VALIDATION`. `resolveSlug` matches exactly (an uppercase URL → `null` → redirected to the canonical one).
+
+**Org name:** trimmed, 2–80 chars.
+
+A user whose only membership is deactivated may create a new org (e.g. a former employee starting their own business).
 
 #### Frontend — frontend-god
 
@@ -159,38 +163,43 @@ members: defineTable({
 src/features/orgs/
   api/        use-my-memberships.ts, use-resolve-slug.ts, use-create-org.ts
   components/ create-org-form.tsx
-  errors.ts   maps error codes → friendly messages (also handles plain-string auth errors)
+src/lib/errors.ts   shared error mapper: codes → friendly messages (also plain-string auth errors)
 ```
 
 - **`/onboarding`** — org name; slug auto-fills and stays editable. Submit → `orgs.create` → `/[slug]`. Already in an org → redirect to it.
 - **`/`** — no org → `/onboarding`; otherwise → my org's `/[slug]`. (Picker comes in Step 4.)
 - **`/[orgSlug]`** — placeholder: org name, my role, `<UserButton />`. `resolveSlug` null → `/`.
 - Loading and error states on every page.
+- Import slug/name rules from `convex/lib/slug.ts` — never a separate client slugify.
+- Every org hook passes `"skip"` unless `useConvexAuth().isAuthenticated` (the queries throw `UNAUTHENTICATED` when signed out).
+- Map errors on `err.data.code`, with a fallback for plain-string auth errors.
 - Carry-over fixes (from Step 0 review): sign-in/sign-up toggle `<span onClick>` → real button; `String(err.data)` in `sign-up-card.tsx` → shared error mapper.
 
 #### Tasks
 
-- [ ] backend-demon: schema, `errors.ts`, `access.ts`, `orgs.ts`
-- [ ] senior-architect: backend review
-- [ ] frontend-god: hooks, error mapper, form, three pages, carry-over fixes
-- [ ] Baba: manual test (second account in a private window)
-- [ ] senior-architect: final review
-- [ ] Commit on `develop`
+- [x] backend-demon: schema, `errors.ts`, `access.ts`, `orgs.ts` (pushed to dev, uncommitted)
+- [x] senior-architect: backend review — approved with changes
+- [x] backend-demon: review fixes (`by_userId_and_status`, shared `lib/slug.ts`, exact-match `resolveSlug`, shared validators)
+- [x] frontend-god: hooks, error mapper, form, three pages, carry-over fixes (uncommitted)
+- [x] Baba: manual test (second account in a private window) — all passed
+- [ ] senior-architect: final review (Baba chose to commit first; review runs after)
+- [x] Commit on `develop`
 
 #### Done when
 
-- [ ] New user signs in → lands on `/onboarding`
-- [ ] Creating an org → lands on `/[slug]`, shows org name and "admin"
-- [ ] Refresh stays on the org page
-- [ ] Taken or reserved slug shows a clear error on the form
-- [ ] User who already has an org can't create a second one
-- [ ] Second user visiting your slug gets redirected away
-- [ ] Every function has arg and return validators
-- [ ] Typecheck, lint, build pass
+- [x] New user signs in → lands on `/onboarding`
+- [x] Creating an org → lands on `/[slug]`, shows org name and "admin"
+- [x] Refresh stays on the org page
+- [x] Taken or reserved slug shows a clear error on the form
+- [x] User who already has an org can't create a second one
+- [x] Second user visiting your slug gets redirected away
+- [x] Signing out from the org page shows no error
+- [x] Every function has arg and return validators
+- [x] Typecheck, lint, build pass
 
 ---
 
-### Step 2 — Sidebar shell
+### Step 2 — Sidebar shell 🔨
 
 **Goal:** the app frame every later feature drops into. Mostly frontend-god.
 
@@ -231,6 +240,7 @@ src/features/orgs/
 - `/invite/[token]`: sign up or sign in, then join
 - Password reset + email verification (same email setup)
 - `/` becomes an org picker for users in more than one org
+- Invite acceptance looks up `by_orgId_and_userId` first and **reactivates** a deactivated row instead of inserting a second one (a duplicate would lock the person out)
 
 **Done when:**
 - [ ] Invited staff can join and only see staff screens
@@ -243,6 +253,7 @@ src/features/orgs/
 ### Step 5 — Org approval
 
 - New orgs start `pending` (one-line change — check already lives in `requireMember`)
+- `myMemberships` returns org `status`; `resolveSlug` returns a tagged result (e.g. `{ kind: "inactive", status }`) instead of throwing `ORG_INACTIVE`, so `/` and `/[orgSlug]` render the pending screen instead of hitting the error boundary. Mutations keep throwing.
 - Add to `orgs`: `reviewedBy?`, `reviewedAt?`, `reviewNote?`, `by_status` index
 - Pending screen after onboarding, updates live when approved
 - `platformAdmins` table; `platform.grant` internal mutation from the CLI
@@ -364,7 +375,7 @@ Admin and Staff only. Manager comes later.
 |---|---|---|---|
 | `users` | — | name, firstName, lastName, email, image | Convex Auth's |
 | `orgs` | 1 | name, slug, status, createdBy · reviewedBy?, reviewedAt?, reviewNote? (Step 5) | `by_slug` · `by_status` (Step 5) |
-| `members` | 1 | orgId, userId, role, status · primaryHomeId? (Step 3) | `by_userId`, `by_orgId`, `by_orgId_and_userId` |
+| `members` | 1 | orgId, userId, role, status · primaryHomeId? (Step 3) | `by_userId_and_status`, `by_orgId`, `by_orgId_and_userId` |
 | `homes` | 3 | orgId, name, address?, timezone, archivedAt? | `by_orgId` |
 | `auditLog` | 3 | orgId, actorId, action, table, docId, before?, after? | `by_orgId` |
 | `invites` | 4 | orgId, email, role, homeId?, tokenHash, expiresAt, acceptedAt?, invitedBy | `by_orgId`, `by_tokenHash`, `by_email` |
@@ -503,6 +514,8 @@ convex/  orgs  homes  members  invites  platform  shifts  shiftRequests  availab
 | Oct 11, 2026 | `/` goes to your org until Step 4, then a picker |
 | Oct 11, 2026 | Commit directly on `develop`; `.claude/` never tracked; `PLAN.md` is committed |
 | Oct 11, 2026 | Team: backend-demon, frontend-god, senior-architect (review) |
+| Oct 11, 2026 | Product name is "Home" for now |
+| Oct 11, 2026 | Shared error mapper lives in `src/lib/errors.ts` (used by every feature) |
 
 ---
 
@@ -511,8 +524,8 @@ convex/  orgs  homes  members  invites  platform  shifts  shiftRequests  availab
 Findings from reviews, parked under the step that fixes them.
 
 **Step 1**
-- [ ] Sign-in/sign-up toggle is `<span onClick>` — not keyboard reachable → `<button type="button">`
-- [ ] `String(err.data)` in `sign-up-card.tsx` → shared error mapper (keep handling plain-string auth errors)
+- [x] Sign-in/sign-up toggle is `<span onClick>` — not keyboard reachable → `<button type="button">`
+- [x] `String(err.data)` in `sign-up-card.tsx` → shared error mapper (keep handling plain-string auth errors)
 
 **Step 2**
 - [ ] Sidebar tokens: `--sidebar-ring: #8DB0EC` (approved). `--sidebar-primary`: white vs `#8DB0EC` — decide on the real rail (architect leans `#8DB0EC` / fg `#12233F`). Add result to §7.
@@ -523,6 +536,12 @@ Findings from reviews, parked under the step that fixes them.
 
 **Step 4**
 - [ ] Account linking: password + Google with the same email = two users. Solved by email verification before invites.
+
+**Step 3** (with the error/wrapper work)
+- [ ] Add optional `field` to `AppErrorData` (`{ code, message, field?: "name" | "slug" }`); the create-org form currently routes server errors to fields by matching message text
+
+**Needs Baba**
+- [x] Product name for the browser tab → "Home" for now
 
 **Anytime**
 - [x] Stray `C:\Users\Chi\package.json` / `package-lock.json` → moved to `C:\Users\Chi\stray-npm-backup\`
@@ -544,4 +563,5 @@ Findings from reviews, parked under the step that fixes them.
 
 Newest first. One or two lines per session.
 
+- **Oct 11, 2026** — Step 1 done: orgs + members, access layer, onboarding, org page; Baba's manual test passed. App titled "Home".
 - **Oct 11, 2026** — Merged the two planning docs into this `PLAN.md`. Built the agent team. Step 0 done (Google auth fixed, proxy rename, navy tokens) → `389b17b` on `develop`. Next: Step 1 backend.

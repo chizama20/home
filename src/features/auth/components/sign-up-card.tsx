@@ -3,9 +3,9 @@ import { useRouter } from "next/navigation";
 import { FcGoogle } from "react-icons/fc";
 import { CheckIcon, TriangleAlertIcon, XIcon } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { ConvexError } from "convex/values";
 
 import { cn } from "@/lib/utils";
+import { getErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -68,11 +68,12 @@ export const SignUpCard = ({ setState }: SignUpCardProps) => {
             flow: "signUp",
         })
             .then(() => router.replace("/"))
-            .catch((err) => {
+            .catch((err: unknown) => {
                 setError(
-                    err instanceof ConvexError
-                        ? String(err.data)
-                        : "Could not create account. This email may already be in use."
+                    getErrorMessage(
+                        err,
+                        "Could not create account. This email may already be in use."
+                    )
                 );
             })
             .finally(() => setPending(false));
@@ -112,7 +113,7 @@ export const SignUpCard = ({ setState }: SignUpCardProps) => {
                             placeholder="First name"
                             autoComplete="given-name"
                             maxLength={50}
-                            className="h-10"
+                            className="h-11"
                             required
                         />
                         <Input
@@ -122,7 +123,7 @@ export const SignUpCard = ({ setState }: SignUpCardProps) => {
                             placeholder="Last name"
                             autoComplete="family-name"
                             maxLength={50}
-                            className="h-10"
+                            className="h-11"
                             required
                         />
                     </div>
@@ -132,7 +133,7 @@ export const SignUpCard = ({ setState }: SignUpCardProps) => {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="Email"
                         type="email"
-                        className="h-10"
+                        className="h-11"
                         required
                     />
                     <Input
@@ -141,7 +142,7 @@ export const SignUpCard = ({ setState }: SignUpCardProps) => {
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Password"
                         type="password"
-                        className="h-10"
+                        className="h-11"
                         required
                     />
                     <ul className="space-y-1 text-xs">
@@ -167,14 +168,14 @@ export const SignUpCard = ({ setState }: SignUpCardProps) => {
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Confirm password"
                         type="password"
-                        className="h-10"
+                        className="h-11"
                         aria-invalid={!!confirmPassword && !passwordsMatch}
                         required
                     />
                     {!!confirmPassword && !passwordsMatch && (
                         <p className="text-xs text-destructive">Passwords do not match</p>
                     )}
-                    <Button type="submit" size="lg" className="w-full h-10" disabled={pending}>
+                    <Button type="submit" size="lg" className="w-full h-11" disabled={pending}>
                         Continue
                     </Button>
                 </form>
@@ -183,7 +184,7 @@ export const SignUpCard = ({ setState }: SignUpCardProps) => {
                     <Button
                         variant="outline"
                         size="lg"
-                        className="w-full h-10 relative"
+                        className="w-full h-11 relative"
                         disabled={pending}
                         onClick={() => onProviderSignIn("google")}
                     >
@@ -193,12 +194,14 @@ export const SignUpCard = ({ setState }: SignUpCardProps) => {
                 </div>
                 <p className="text-xs text-muted-foreground">
                     Already have an account?{" "}
-                    <span
+                    <button
+                        type="button"
                         onClick={() => setState("signIn")}
-                        className="text-primary hover:underline cursor-pointer"
+                        disabled={pending}
+                        className="rounded-sm font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
                     >
                         Sign in
-                    </span>
+                    </button>
                 </p>
             </CardContent>
         </Card>
