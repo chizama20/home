@@ -49,7 +49,7 @@ export const SignInCard = ({ setState }: SignInCardProps) => {
     };
 
     return (
-        <Card className="w-full h-full p-8 shadow-xl">
+        <Card className="w-full h-full p-8 shadow-sm">
             <CardHeader className="px-0 pt-0">
                 <CardTitle className="text-2xl font-semibold">
                     Login to continue
@@ -59,7 +59,7 @@ export const SignInCard = ({ setState }: SignInCardProps) => {
                 </CardDescription>
             </CardHeader>
             {!!error && (
-                <div className="flex items-center gap-x-2 rounded-md bg-red-50 p-3 text-sm text-red-600">
+                <div className="flex items-center gap-x-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
                     <TriangleAlertIcon className="size-4 shrink-0" />
                     <p>{error}</p>
                 </div>
@@ -105,7 +105,7 @@ export const SignInCard = ({ setState }: SignInCardProps) => {
                     Don&apos;t have an account?{" "}
                     <span
                         onClick={() => setState("signUp")}
-                        className="text-sky-700 hover:underline cursor-pointer"
+                        className="text-primary hover:underline cursor-pointer"
                     >
                         Sign up
                     </span>
