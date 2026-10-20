@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserButton } from "@/features/auth/components/user-button";
 import { useMyMemberships } from "../api/use-my-memberships";
+import { orgPath } from "../sections";
 import { CreateOrgForm } from "./create-org-form";
 
 export const OnboardingScreen = () => {
@@ -15,7 +16,7 @@ export const OnboardingScreen = () => {
 
   // One org per person: anyone who already has one goes straight to it.
   useEffect(() => {
-    if (existingSlug) router.replace(`/${existingSlug}`);
+    if (existingSlug) router.replace(orgPath(existingSlug));
   }, [existingSlug, router]);
 
   const showForm = !isLoading && !existingSlug;

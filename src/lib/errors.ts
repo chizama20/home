@@ -1,5 +1,9 @@
 import { ConvexError } from "convex/values";
-import { ERROR_CODES, type ErrorCode } from "../../convex/lib/errors";
+import {
+  ERROR_CODES,
+  type AppErrorData,
+  type ErrorCode,
+} from "../../convex/lib/errors";
 
 // Turns any thrown error into text that is safe and useful to show a person.
 // Shared by every feature: org functions throw ConvexError({ code, message })
@@ -22,13 +26,11 @@ const USER_FACING_CODES: ReadonlySet<ErrorCode> = new Set([
   "CONFLICT",
 ]);
 
-type AppError = { code: ErrorCode; message: string };
-
 function isErrorCode(value: unknown): value is ErrorCode {
   return (ERROR_CODES as readonly unknown[]).includes(value);
 }
 
-function getAppError(err: unknown): AppError | null {
+function getAppError(err: unknown): AppErrorData | null {
   if (!(err instanceof ConvexError)) return null;
   const data: unknown = err.data;
   if (typeof data !== "object" || data === null) return null;

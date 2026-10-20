@@ -16,6 +16,7 @@ import {
   validateSlug,
 } from "../../../../convex/lib/slug";
 import { useCreateOrg } from "../api/use-create-org";
+import { orgPath } from "../sections";
 
 type ServerError = { field: "name" | "slug" | "form"; message: string };
 
@@ -105,7 +106,7 @@ export const CreateOrgForm = () => {
     createOrg({ name: name.trim(), slug: normalizedSlug })
       .then((savedSlug) => {
         setSucceeded(true);
-        router.replace(`/${savedSlug}`);
+        router.replace(orgPath(savedSlug));
       })
       .catch((err: unknown) => setServerError(toServerError(err)));
   };

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import { ConvexClientProvider } from "@/components/convex-client-provider"
+import { ThemeProvider } from "@/components/theme-provider";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server"
 
 import "./globals.css";
@@ -16,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Home",
+  title: { default: "Home", template: "%s · Home" },
   description: "Scheduling, time clock and team management for group homes.",
 };
 
@@ -26,11 +27,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <html
         lang="en"
         className={`${jakarta.variable} ${geistMono.variable} h-full antialiased`}
+        suppressHydrationWarning
       >
         <body className="min-h-full flex flex-col" suppressHydrationWarning>
-          <ConvexClientProvider>
-           {children}
-          </ConvexClientProvider>
+          <ThemeProvider>
+            <ConvexClientProvider>
+              {children}
+            </ConvexClientProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ConvexAuthNextjsServerProvider>

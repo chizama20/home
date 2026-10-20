@@ -16,7 +16,7 @@ import {
     CardDescription,
     CardTitle,
 } from "@/components/ui/card";
-import { SignInFlow } from "../types";
+import { SignInFlow } from "../../orgs/types";
 import {
     meetsPasswordRequirements,
     passwordRequirements,

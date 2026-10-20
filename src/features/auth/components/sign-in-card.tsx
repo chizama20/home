@@ -14,7 +14,7 @@ import {
     CardDescription,
     CardTitle,
 } from "@/components/ui/card";
-import { SignInFlow } from "../types";
+import { SignInFlow } from "../../orgs/types";
 
 interface SignInCardProps {
     setState: (state: SignInFlow) => void;

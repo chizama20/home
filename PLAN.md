@@ -10,15 +10,20 @@
 | | |
 |---|---|
 | **Current step** | **Step 2 — Sidebar shell** |
-| **Next action** | senior-architect does the after-the-fact Step 1 final review; then Step 2 starts (mostly frontend-god) |
-| **Then** | frontend-god builds the shell → Baba tests → review → commit |
+| **Next action** | **Baba:** manual test of Step 2 (see "Waiting on Baba") |
+| **Then** | Baba commits Step 2 → Step 3 (Homes + audit + full access layer) starts with backend-demon |
 | **Branch** | `develop` |
-| **Last commit** | Step 1 — org creation (see `git log`) |
+| **Last commit** | `4349ed9` Step 1 — org creation |
 | **Blocked on** | nothing |
 | **Last updated** | Oct 11, 2026 |
 
 **Waiting on Baba**
-- nothing right now
+- Manual test of Step 2 (`bun dev`):
+  - every rail item routes (Dash, Shifts, Time, Residents, Team, Settings); `/<slug>` lands on `/<slug>/dash`
+  - staff account: no Team in rail/tab bar; typing `/<slug>/team` goes back to Dash
+  - 375px wide (DevTools): bottom tab bar, Settings in the account menu, nothing overflows
+  - theme: light by default, dark toggle in the account menu, no light flash on refresh in dark; dark auth card vs background still distinguishable
+- Then commit Step 2 (all checks green: tsc, lint, build; senior-architect approved)
 
 ---
 
@@ -27,7 +32,7 @@
 | Step | What | Status |
 |---|---|---|
 | 0 | Housekeeping (Google auth, proxy rename, tokens) | ✅ Done — `389b17b` |
-| 1 | Org admin creates an org | ✅ Done |
+| 1 | Org admin creates an org | ✅ Done — `4349ed9` |
 | 2 | Sidebar shell | 🔨 **Current** |
 | 3 | Homes + audit + full access layer | ⬜ |
 | 4 | Team and invites | ⬜ |
@@ -52,7 +57,7 @@ Legend: ✅ done · 🔨 in progress · ⬜ not started · ⛔ blocked
 | Who | Does | Edits files? |
 |---|---|---|
 | **Baba** | Decisions, credentials/env vars, manual click-through testing, approves commits | — |
-| **Claude (main session)** | Coordinates, runs agents, small chores, keeps this doc updated, commits | Yes |
+| **Claude (main session)** | Coordinates, runs agents, small chores, keeps this doc updated (never commits unless told) | Yes |
 | **backend-demon** | All Convex/backend code | Yes |
 | **frontend-god** | All UI | Yes |
 | **senior-architect** | Reviews each half before the next starts | No (read-only) |
@@ -66,7 +71,7 @@ Agents live in `.claude/agents/` (local only, never committed).
 3. **frontend-god** builds the UI against the backend's API
 4. **Baba** walks the Done-when list by hand
 5. **senior-architect** final review; typecheck, lint, build (and tests from Step 3) pass
-6. **Claude** commits on `develop`, ticks the boxes here, updates §0
+6. **Claude** ticks the boxes here, updates §0 and reports "ready to commit" — **Baba commits** (Claude commits only when told to)
 
 ### Rules
 
@@ -182,7 +187,7 @@ src/lib/errors.ts   shared error mapper: codes → friendly messages (also plain
 - [x] backend-demon: review fixes (`by_userId_and_status`, shared `lib/slug.ts`, exact-match `resolveSlug`, shared validators)
 - [x] frontend-god: hooks, error mapper, form, three pages, carry-over fixes (uncommitted)
 - [x] Baba: manual test (second account in a private window) — all passed
-- [ ] senior-architect: final review (Baba chose to commit first; review runs after)
+- [x] senior-architect: final review (ran after commit at Baba's call) — clean, nothing to fix
 - [x] Commit on `develop`
 
 #### Done when
@@ -202,6 +207,12 @@ src/lib/errors.ts   shared error mapper: codes → friendly messages (also plain
 ### Step 2 — Sidebar shell 🔨
 
 **Goal:** the app frame every later feature drops into. Mostly frontend-god.
+
+**Before coding** (from the Step 1 final review)
+- Org is resolved **once** in `src/app/[orgSlug]/layout.tsx` and shared through `useCurrentOrg()` (context in `src/features/orgs/`). Pages never call `useResolveSlug` themselves. The redirect + skeleton logic from `org-home-screen.tsx` moves into the layout; the placeholder page becomes Dash.
+- Team hidden for staff using the layout's resolved role. No Team query yet, so nothing to guard server-side until Step 4 — don't invent one.
+- Dark-mode toggle: `next-themes` (tiny, shadcn standard — justify per §2) or ~20 lines of inline script. Either way: applied before first paint (no light flash), stored in localStorage (per device, no Convex query), `suppressHydrationWarning` on `<html>`.
+- Sidebar tokens decided on the real rail; result recorded in §7.
 
 - `[orgSlug]/layout.tsx` resolves the org once, guards membership, renders navy rail + header
 - Rail: Dash, Shifts, Time, Residents, Team (admins only), Settings — empty pages
@@ -247,6 +258,7 @@ src/lib/errors.ts   shared error mapper: codes → friendly messages (also plain
 - [ ] Email verification is on **before** invites go live
 - [ ] Accepting needs the token **and** a verified email matching the invite
 - [ ] No mutation can leave an org with zero active admins
+- [ ] Opening an invite link while signed out returns to the invite after sign-in
 
 ---
 
@@ -395,7 +407,7 @@ Only add a table when its step starts.
 
 ## 7. Design system
 
-**Look:** Homebase-style layout — left rail, clean header, dense but friendly. Light default, dark toggle, navy base. Tokens live in `src/app/globals.css`.
+**Look:** Homebase-style layout — left rail, clean header, dense but friendly. Light default, dark toggle (account menu; also "System"), navy base. Tokens live in `src/app/globals.css`.
 
 | Token | Light | Dark |
 |---|---|---|
@@ -411,7 +423,8 @@ Only add a table when its step starts.
 | sidebar / -foreground | `#12233F` / `#B8C3D6` | `#0E1C33` / `#9AA7BD` |
 | sidebar-accent / -border | `#1F3559` | `#1A2B47` |
 | success / warning | `#15803D` / `#B45309` | `#4ADE80` / `#FBBF24` |
-| sidebar-primary, sidebar-ring | *decide in Step 2* | *decide in Step 2* |
+| sidebar-primary / -foreground | `#8DB0EC` / `#12233F` | `#8DB0EC` / `#12233F` |
+| sidebar-ring | `#8DB0EC` | `#8DB0EC` |
 
 **Rules**
 - **Tokens only** — `bg-primary`, `text-muted-foreground`. Never hex or `text-blue-600`.
@@ -430,7 +443,7 @@ Only add a table when its step starts.
 | Time | ✓ | ✓ | Admin: timesheets, missed clock-outs. Staff: clock in/out, hours. |
 | Residents | ✓ | ✓ | By home |
 | Team | ✓ | — | Members, invites, roles |
-| Settings | ✓ | ✓ | Admin: org, homes. Everyone: profile, theme. |
+| Settings | ✓ | ✓ | Admin: org, homes. Everyone: profile. Theme lives in the account menu. |
 
 Header: page title + home switcher.
 
@@ -516,6 +529,13 @@ convex/  orgs  homes  members  invites  platform  shifts  shiftRequests  availab
 | Oct 11, 2026 | Team: backend-demon, frontend-god, senior-architect (review) |
 | Oct 11, 2026 | Product name is "Home" for now |
 | Oct 11, 2026 | Shared error mapper lives in `src/lib/errors.ts` (used by every feature) |
+| Oct 11, 2026 | Claude never commits — Baba commits (or says "commit") |
+| Oct 11, 2026 | Dark mode via `next-themes`; sidebar accent + ring `#8DB0EC` (fg `#12233F`) in both themes |
+| Oct 11, 2026 | Light is the default theme; "System" is opt-in from the account menu |
+| Oct 11, 2026 | Dash lives at `/[orgSlug]/dash`; `/[orgSlug]` redirects there (temporary redirect — landing may vary by role later) |
+| Oct 11, 2026 | Phones get a bottom tab bar (≤5 tabs); Settings moves into the account menu on phones |
+| Oct 11, 2026 | Theme control lives in the account menu, not Settings |
+| Oct 11, 2026 | Empty states have no action buttons until the thing they'd link to exists |
 
 ---
 
@@ -528,14 +548,31 @@ Findings from reviews, parked under the step that fixes them.
 - [x] `String(err.data)` in `sign-up-card.tsx` → shared error mapper (keep handling plain-string auth errors)
 
 **Step 2**
-- [ ] Sidebar tokens: `--sidebar-ring: #8DB0EC` (approved). `--sidebar-primary`: white vs `#8DB0EC` — decide on the real rail (architect leans `#8DB0EC` / fg `#12233F`). Add result to §7.
-- [ ] `md:w-[550px]` on auth screen → `max-w-md`
-- [ ] Spinner in user-button → skeleton
-- [ ] Dark mode: card `#12233F` vs auth background `#0E1C33` very close — check
-- [ ] `shadow-lg` in `components/ui/dropdown-menu.tsx`
+- [x] Sidebar tokens: `--sidebar-primary: #8DB0EC` / fg `#12233F`, `--sidebar-ring: #8DB0EC` → recorded in §7
+- [x] `md:w-[550px]` on auth screen → `max-w-md`
+- [x] Spinner in user-button → skeleton
+- [ ] Dark mode: card `#12233F` vs auth background — now `bg-background` `#0B1526` (better, still close; card outline separates it) — **Baba judges by eye**
+- [x] `shadow-lg` in `components/ui/dropdown-menu.tsx`
+- [x] `src/lib/errors.ts` imports `AppErrorData` from `convex/lib/errors.ts`
+
+**Step 3** (from Step 2 final review)
+- [ ] Decide home-switcher storage before building: home NOT in the URL; `CurrentHomeProvider` inside `CurrentOrgProvider`, reads `homes.list` via `orgQuery`, selection in localStorage keyed by `orgId`, defaults to `members.primaryHomeId`. Decide on admin "All homes".
+- [ ] Switcher slot in `app-header.tsx` **and** a placeholder in the shared `HeaderFrame` skeleton (no layout shift)
+- [ ] Add `src/app/[orgSlug]/error.tsx` once real org queries land (keeps the rail on page errors)
+- [ ] Header titles for sub-pages (e.g. Settings → Homes); today the title comes from the top-level nav item only
+- [ ] Admin Dash empty state gets an "Add your first home" action
 
 **Step 4**
 - [ ] Account linking: password + Google with the same email = two users. Solved by email verification before invites.
+- [ ] **Skeleton hangs if client auth is lost** (refresh token expires/revoked with tab open): in `CurrentOrgProvider`, when `useConvexAuth()` is not loading and not authenticated → `router.replace("/auth")`. Do with the `redirectTo` work below.
+- [ ] `team.list` must be an `adminQuery` — `AdminOnly` is UI only, never the guard
+- [ ] **Deep links lost at sign-in:** proxy sends to `/auth`, sign-in goes to `/`, so `/invite/[token]` would lose the token. Proxy adds `?redirectTo=<path>`; sign-in follows it **only** for relative paths starting with `/` and not `//` (no open redirect).
+
+**Step 5**
+- [ ] `resolveSlug` must never return `null` for an org that `myMemberships` still lists — otherwise `/` ↔ `/x/dash` redirect loop. The tagged result avoids it; keep it explicit.
+
+**Step 10**
+- [ ] Add `src/app/robots.ts` — `[orgSlug]` currently catches `/robots.txt` and `/sitemap.xml`
 
 **Step 3** (with the error/wrapper work)
 - [ ] Add optional `field` to `AppErrorData` (`{ code, message, field?: "name" | "slug" }`); the create-org form currently routes server errors to fields by matching message text
@@ -544,6 +581,10 @@ Findings from reviews, parked under the step that fixes them.
 - [x] Product name for the browser tab → "Home" for now
 
 **Anytime**
+- [ ] `dropdown-menu.tsx`: comment the `py-3 md:py-1` edits so a future `shadcn add dropdown-menu` doesn't silently undo them
+- [ ] `app-shell-skeleton.tsx`: `TAB_ITEMS = 5` but staff see 4 → small tab-bar shift on load
+- [ ] `MobileNavFrame`: add `pb-[env(safe-area-inset-bottom)]` if `viewport-fit=cover` is ever turned on
+- [ ] `ui/card.tsx` still uses `rounded-xl` (§7 says `rounded-md`/`rounded-lg`)
 - [x] Stray `C:\Users\Chi\package.json` / `package-lock.json` → moved to `C:\Users\Chi\stray-npm-backup\`
 - [x] `.gitattributes` for line endings (LF)
 
@@ -563,5 +604,7 @@ Findings from reviews, parked under the step that fixes them.
 
 Newest first. One or two lines per session.
 
+- **Oct 11, 2026** — Step 2 built (frontend-god finished the shell: `[orgSlug]` layout + 6 section pages, bottom tab bar on phones, theme in account menu, Dash at `/dash`). senior-architect approved; default theme fixed to light. tsc/lint/build green. Waiting on Baba's manual test + commit.
+- **Oct 11, 2026** — Paused mid-Step 2 (frontend-god building the shell, uncommitted). Rule added: Claude never commits; Baba does.
 - **Oct 11, 2026** — Step 1 done: orgs + members, access layer, onboarding, org page; Baba's manual test passed. App titled "Home".
 - **Oct 11, 2026** — Merged the two planning docs into this `PLAN.md`. Built the agent team. Step 0 done (Google auth fixed, proxy rename, navy tokens) → `389b17b` on `develop`. Next: Step 1 backend.
